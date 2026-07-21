@@ -1,0 +1,17 @@
+{
+  "OrgHeader": {
+    "tableName": "OrgHeader",
+    "columns": ["OH_Code", "OH_FullName", "OH_IsActive", "OH_IsDebtor", "OH_SystemCreateTimeUtc"],
+    "rows": [
+      { "OH_Code": "ACMELOG", "OH_FullName": "Acme Logistics Pty Ltd", "OH_IsActive": true, "OH_IsDebtor": true, "OH_SystemCreateTimeUtc": "2019-03-14 08:22:00" },
+      { "OH_Code": "GLOBFRG", "OH_FullName": "Global Freight Solutions Inc", "OH_IsActive": true, "OH_IsDebtor": false, "OH_SystemCreateTimeUtc": "2020-07-01 11:45:00" },
+      { "OH_Code": "PACSHIP", "OH_FullName": "Pacific Shipping Co", "OH_IsActive": true, "OH_IsDebtor": true, "OH_SystemCreateTimeUtc": "2018-11-30 09:10:00" },
+      { "OH_Code": "EUROLOG", "OH_FullName": "Eurologistics GmbH", "OH_IsActive": false, "OH_IsDebtor": false, "OH_SystemCreateTimeUtc": "2017-05-22 14:03:00" },
+      { "OH_Code": "APEXTPT", "OH_FullName": "Apex Transport Ltd", "OH_IsActive": true, "OH_IsDebtor": true, "OH_SystemCreateTimeUtc": "2021-02-08 16:55:00" }
+    ],
+    "sql": "SELECT TOP 100 [OH_Code], [OH_FullName], [OH_IsActive], [OH_IsDebtor], [OH_SystemCreateTimeUtc]\nFROM [dbo].[OrgHeader]",
+    "hiddenCount": 2,
+    "blocked": false,
+    "cachedAt": "2026-03-26T04:00:00.000Z"
+  }
+}

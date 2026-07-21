@@ -1,0 +1,242 @@
+[
+  {
+    "name": "Workflow, Process and PAVE",
+    "description": "Process tasks, task iterations, task templates, process queue, workflow triggers, board management, release processes, NCN shapes, tagging, capacity, milestones, scored metrics",
+    "tableCount": 0,
+    "columnCount": 0,
+    "ownershipCoverage": 0,
+    "criticalityBreakdown": {
+      "H": 0,
+      "M": 0,
+      "L": 0,
+      "unset": 0
+    },
+    "primaryOwner": "Alexander Ladomatos",
+    "secondaryOwner": null,
+    "subdomainOwners": {
+      "NCNs": {
+        "primaryOwner": null,
+        "secondaryOwner": null,
+        "sensitiveData": "inherit"
+      },
+      "Tags": {
+        "primaryOwner": null,
+        "secondaryOwner": null,
+        "sensitiveData": "inherit"
+      },
+      "PAVE Boards": {
+        "primaryOwner": "Alexander Ladomatos",
+        "secondaryOwner": null,
+        "priority": "Medium",
+        "sensitiveData": "inherit"
+      },
+      "Jobs": {
+        "primaryOwner": "Alexander Ladomatos",
+        "secondaryOwner": null,
+        "priority": "Medium",
+        "sensitiveData": "inherit"
+      },
+      "Teams": {
+        "primaryOwner": "Alexander Ladomatos",
+        "secondaryOwner": null,
+        "priority": "High",
+        "sensitiveData": "inherit"
+      },
+      "Capabilities": {
+        "primaryOwner": null,
+        "secondaryOwner": null,
+        "sensitiveData": "inherit"
+      }
+    },
+    "priority": null,
+    "sensitiveData": null
+  },
+  {
+    "name": "HR",
+    "description": "Staff teams, managers, classifications, reviews, work patterns, timezones, email addresses, holiday sources",
+    "tableCount": 11,
+    "columnCount": 0,
+    "ownershipCoverage": 0,
+    "criticalityBreakdown": {
+      "H": 0,
+      "M": 0,
+      "L": 11,
+      "unset": 0
+    },
+    "primaryOwner": "Philip Gibbs",
+    "secondaryOwner": null,
+    "subdomainOwners": {
+      "Organisations": {
+        "primaryOwner": null,
+        "secondaryOwner": null,
+        "sensitiveData": "inherit"
+      },
+      "NCNs": {
+        "primaryOwner": null,
+        "secondaryOwner": null,
+        "sensitiveData": "inherit"
+      },
+      "Tags": {
+        "primaryOwner": null,
+        "secondaryOwner": null,
+        "sensitiveData": "inherit"
+      },
+      "People": {
+        "primaryOwner": null,
+        "secondaryOwner": null,
+        "sensitiveData": "inherit"
+      }
+    },
+    "priority": null,
+    "sensitiveData": null
+  },
+  {
+    "name": "Customer Experience",
+    "description": "Domain supporting the Customer Experience function (Product Support, Account Management, Customer Success, & Customer Onboarding)",
+    "tableCount": 0,
+    "columnCount": 0,
+    "ownershipCoverage": 0,
+    "criticalityBreakdown": {
+      "H": 0,
+      "M": 0,
+      "L": 0,
+      "unset": 0
+    },
+    "primaryOwner": "Max Rose",
+    "secondaryOwner": null,
+    "subdomainOwners": {
+      "Conversation": {
+        "primaryOwner": "Max Rose",
+        "secondaryOwner": null,
+        "priority": "Medium",
+        "sensitiveData": "inherit"
+      }
+    },
+    "priority": null,
+    "sensitiveData": null
+  },
+  {
+    "name": "Customer Records",
+    "description": "",
+    "tableCount": 0,
+    "columnCount": 0,
+    "ownershipCoverage": 0,
+    "criticalityBreakdown": {
+      "H": 0,
+      "M": 0,
+      "L": 0,
+      "unset": 0
+    },
+    "primaryOwner": null,
+    "secondaryOwner": null,
+    "subdomainOwners": {
+      "Organisations": {
+        "primaryOwner": null,
+        "secondaryOwner": null,
+        "sensitiveData": "inherit"
+      }
+    },
+    "priority": null,
+    "sensitiveData": null
+  },
+  {
+    "name": "Shared",
+    "description": "Generic pivots, custom add-on values, activity logs, record logs, notes",
+    "tableCount": 5,
+    "columnCount": 0,
+    "ownershipCoverage": 0,
+    "criticalityBreakdown": {
+      "H": 3,
+      "M": 0,
+      "L": 2,
+      "unset": 0
+    },
+    "primaryOwner": null,
+    "secondaryOwner": null,
+    "subdomainOwners": {},
+    "priority": null,
+    "sensitiveData": null
+  },
+  {
+    "name": "Product Development",
+    "description": "",
+    "tableCount": 0,
+    "columnCount": 0,
+    "ownershipCoverage": 0,
+    "criticalityBreakdown": {
+      "H": 0,
+      "M": 0,
+      "L": 0,
+      "unset": 0
+    },
+    "primaryOwner": null,
+    "secondaryOwner": null,
+    "subdomainOwners": {},
+    "priority": null,
+    "sensitiveData": null
+  },
+  {
+    "name": "Finance",
+    "description": "",
+    "tableCount": 0,
+    "columnCount": 0,
+    "ownershipCoverage": 0,
+    "criticalityBreakdown": {
+      "H": 0,
+      "M": 0,
+      "L": 0,
+      "unset": 0
+    },
+    "primaryOwner": null,
+    "secondaryOwner": null,
+    "subdomainOwners": {},
+    "priority": null,
+    "sensitiveData": null
+  },
+  {
+    "name": "Configuration",
+    "description": "",
+    "tableCount": 0,
+    "columnCount": 0,
+    "ownershipCoverage": 0,
+    "criticalityBreakdown": {
+      "H": 0,
+      "M": 0,
+      "L": 0,
+      "unset": 0
+    },
+    "primaryOwner": null,
+    "secondaryOwner": null,
+    "subdomainOwners": {},
+    "priority": null,
+    "sensitiveData": null
+  },
+  {
+    "name": "Core",
+    "description": "",
+    "tableCount": 0,
+    "columnCount": 0,
+    "ownershipCoverage": 0,
+    "criticalityBreakdown": {
+      "H": 0,
+      "M": 0,
+      "L": 0,
+      "unset": 0
+    },
+    "primaryOwner": null,
+    "secondaryOwner": null,
+    "subdomainOwners": {
+      "Groups": { "primaryOwner": null, "secondaryOwner": null, "sensitiveData": "inherit" },
+      "Generics": { "primaryOwner": null, "secondaryOwner": null, "sensitiveData": "inherit" },
+      "Reference Data": { "primaryOwner": null, "secondaryOwner": null, "sensitiveData": "inherit" },
+      "Branches & Departments": { "primaryOwner": null, "secondaryOwner": null, "sensitiveData": "inherit" },
+      "Communication": { "primaryOwner": null, "secondaryOwner": null, "sensitiveData": "inherit" },
+      "Platform": { "primaryOwner": null, "secondaryOwner": null, "sensitiveData": "inherit" },
+      "Audit & Logging": { "primaryOwner": null, "secondaryOwner": null, "sensitiveData": "inherit" },
+      "Security": { "primaryOwner": null, "secondaryOwner": null, "sensitiveData": "inherit" },
+      "Company": { "primaryOwner": null, "secondaryOwner": null, "sensitiveData": "inherit" }
+    },
+    "priority": null,
+    "sensitiveData": null
+  }
+]
