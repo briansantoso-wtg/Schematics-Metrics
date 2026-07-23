@@ -269,17 +269,18 @@ app.get('/api/schrg', async (_req, res) => {
           MONTH(IM.IM_SystemCreateTimeUtc) AS Month,
           FORMAT(IM.IM_SystemCreateTimeUtc, 'yyyy-MM') AS YearMonth,
           WF.P9_GS_NKAssignedStaffMember AS StaffMember,
-          COUNT(DISTINCT IM.IM_ID) AS IncidentCount,
-          ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS AvgDaysToClose
+          COUNT(DISTINCT IM.IM_PK) AS IncidentCount,
+          ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_CloseTimeUtc) / 86400.0), 4) AS AvgDaysToClose
       FROM IncidentMain IM
       INNER JOIN (
           SELECT P9_ParentID, P9_GS_NKAssignedStaffMember, ROW_NUMBER() OVER (PARTITION BY P9_ParentID ORDER BY P9_PK DESC) AS rn
           FROM WorkflowTask
           WHERE P9_ParentTableCode = 'IM' AND P9_GS_NKAssignedStaffMember IN (SELECT StaffCode FROM Staffs)
-      ) WF ON IM.IM_ID = WF.P9_ParentID AND WF.rn = 1
+      ) WF ON IM.IM_PK = WF.P9_ParentID AND WF.rn = 1
       WHERE IM.IM_Status = 'CLS'
           AND IM.IM_SystemCreateTimeUtc >= @StartDate
           AND IM.IM_Priority NOT IN (SELECT Priority FROM ExcludedPriorities)
+          AND IM.IM_CloseTimeUtc IS NOT NULL
       GROUP BY YEAR(IM.IM_SystemCreateTimeUtc), MONTH(IM.IM_SystemCreateTimeUtc), FORMAT(IM.IM_SystemCreateTimeUtc, 'yyyy-MM'), WF.P9_GS_NKAssignedStaffMember
       ORDER BY Year DESC, Month DESC, StaffMember;
     `
@@ -298,19 +299,20 @@ app.get('/api/schrg', async (_req, res) => {
           YEAR(IM.IM_SystemCreateTimeUtc) AS Year,
           WF.P9_GS_NKAssignedStaffMember AS StaffMember,
           IM.IM_Priority AS Priority,
-          COUNT(DISTINCT IM.IM_ID) AS IncidentCount,
-          ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS AvgDaysToClose,
-          ROUND(MIN(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS MinDays,
-          ROUND(MAX(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS MaxDays
+          COUNT(DISTINCT IM.IM_PK) AS IncidentCount,
+          ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_CloseTimeUtc) / 86400.0), 4) AS AvgDaysToClose,
+          ROUND(MIN(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_CloseTimeUtc) / 86400.0), 4) AS MinDays,
+          ROUND(MAX(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_CloseTimeUtc) / 86400.0), 4) AS MaxDays
       FROM IncidentMain IM
       INNER JOIN (
           SELECT P9_ParentID, P9_GS_NKAssignedStaffMember, ROW_NUMBER() OVER (PARTITION BY P9_ParentID ORDER BY P9_PK DESC) AS rn
           FROM WorkflowTask
           WHERE P9_ParentTableCode = 'IM' AND P9_GS_NKAssignedStaffMember IN (SELECT StaffCode FROM Staffs)
-      ) WF ON IM.IM_ID = WF.P9_ParentID AND WF.rn = 1
+      ) WF ON IM.IM_PK = WF.P9_ParentID AND WF.rn = 1
       WHERE IM.IM_Status = 'CLS'
           AND IM.IM_SystemCreateTimeUtc >= @StartDate
           AND IM.IM_Priority NOT IN (SELECT Priority FROM ExcludedPriorities)
+          AND IM.IM_CloseTimeUtc IS NOT NULL
       GROUP BY YEAR(IM.IM_SystemCreateTimeUtc), WF.P9_GS_NKAssignedStaffMember, IM.IM_Priority
       ORDER BY Year DESC, StaffMember, Priority;
     `
@@ -328,17 +330,18 @@ app.get('/api/schrg', async (_req, res) => {
           SELECT
               YEAR(IM.IM_SystemCreateTimeUtc) AS Year,
               WF.P9_GS_NKAssignedStaffMember AS StaffMember,
-              ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS AvgDays,
-              COUNT(DISTINCT IM.IM_ID) AS IncidentCount
+              ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_CloseTimeUtc) / 86400.0), 4) AS AvgDays,
+              COUNT(DISTINCT IM.IM_PK) AS IncidentCount
           FROM IncidentMain IM
           INNER JOIN (
               SELECT P9_ParentID, P9_GS_NKAssignedStaffMember, ROW_NUMBER() OVER (PARTITION BY P9_ParentID ORDER BY P9_PK DESC) AS rn
               FROM WorkflowTask
               WHERE P9_ParentTableCode = 'IM' AND P9_GS_NKAssignedStaffMember IN (SELECT StaffCode FROM Staffs)
-          ) WF ON IM.IM_ID = WF.P9_ParentID AND WF.rn = 1
+          ) WF ON IM.IM_PK = WF.P9_ParentID AND WF.rn = 1
           WHERE IM.IM_Status = 'CLS'
               AND IM.IM_SystemCreateTimeUtc >= @StartDate
               AND IM.IM_Priority NOT IN (SELECT Priority FROM ExcludedPriorities)
+              AND IM.IM_CloseTimeUtc IS NOT NULL
           GROUP BY YEAR(IM.IM_SystemCreateTimeUtc), WF.P9_GS_NKAssignedStaffMember
       )
       SELECT
