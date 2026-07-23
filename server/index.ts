@@ -247,6 +247,32 @@ function parseCSV(content: string): Record<string, unknown>[] {
   })
 }
 
+// Diagnostic endpoint to check what data exists
+app.get('/api/schrg/debug', async (_req, res) => {
+  try {
+    const debugQueries = {
+      closedIncidentCount: `SELECT COUNT(*) as count FROM IncidentMain WHERE IM_Status = 'CLS'`,
+      staffCodes: `SELECT DISTINCT P9_GS_NKAssignedStaffMember FROM WorkflowTask WHERE P9_ParentTableCode = 'IM' AND P9_GS_NKAssignedStaffMember IS NOT NULL`,
+      recentIncidents: `SELECT TOP 5 IM_PK, IM_Status, IM_SystemCreateTimeUtc, IM_CloseTimeUtc FROM IncidentMain WHERE IM_Status = 'CLS' ORDER BY IM_SystemCreateTimeUtc DESC`,
+      incidentsByStaff: `SELECT WF.P9_GS_NKAssignedStaffMember, COUNT(*) as count FROM IncidentMain IM INNER JOIN (SELECT P9_ParentID, P9_GS_NKAssignedStaffMember, ROW_NUMBER() OVER (PARTITION BY P9_ParentID ORDER BY P9_PK DESC) AS rn FROM WorkflowTask WHERE P9_ParentTableCode = 'IM') WF ON IM.IM_PK = WF.P9_ParentID AND WF.rn = 1 WHERE IM.IM_Status = 'CLS' GROUP BY WF.P9_GS_NKAssignedStaffMember`
+    }
+
+    const results: Record<string, unknown> = {}
+
+    for (const [key, query] of Object.entries(debugQueries)) {
+      try {
+        results[key] = await queryRaw(query)
+      } catch (err) {
+        results[key] = { error: err instanceof Error ? err.message : String(err) }
+      }
+    }
+
+    res.json(results)
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
 app.get('/api/schrg', async (_req, res) => {
   try {
     // SCHRG configuration
@@ -357,6 +383,9 @@ app.get('/api/schrg', async (_req, res) => {
       ORDER BY CurrentYear DESC, StaffMember;
     `
 
+    console.log('SCHRG Query started')
+    console.log('Config - Start:', startDate, 'Staff:', staffList, 'Exclude:', excludePriorities)
+
     const [monthly, yearly, yoy] = await Promise.all([
       queryRaw(monthlyQuery).catch(err => {
         console.error('Monthly query failed:', err)
@@ -372,12 +401,19 @@ app.get('/api/schrg', async (_req, res) => {
       }),
     ])
 
+    console.log('SCHRG Results - Monthly:', monthly.length, 'Yearly:', yearly.length, 'YoY:', yoy.length)
+
     res.json({
       monthly,
       yearly,
       yoy,
       lastUpdated: new Date().toISOString(),
-      source: 'live'
+      source: 'live',
+      debug: {
+        monthlyCount: monthly.length,
+        yearlyCount: yearly.length,
+        yoyCount: yoy.length
+      }
     })
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
