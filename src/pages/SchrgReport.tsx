@@ -352,7 +352,7 @@ export default function SchrgReport() {
 
       <section className="grid gap-4 lg:grid-cols-[1.5fr_1fr] mb-6">
         <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <p className="text-xs uppercase tracking-wide text-gray-500">Total incidents</p>
                 <p className="mt-3 text-3xl font-semibold">{totals.incidentCount}</p>
@@ -360,10 +360,6 @@ export default function SchrgReport() {
               <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <p className="text-xs uppercase tracking-wide text-gray-500">Avg days to close</p>
                 <p className="mt-3 text-3xl font-semibold">{totals.avgDays.toFixed(1)}</p>
-              </div>
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <p className="text-xs uppercase tracking-wide text-gray-500">Staff selected</p>
-                <p className="mt-3 text-3xl font-semibold">{staffFilter || 'All'}</p>
               </div>
               <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <p className="text-xs uppercase tracking-wide text-gray-500">Priority mix</p>
@@ -455,36 +451,6 @@ export default function SchrgReport() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h3 className="text-base font-semibold">Incident volumes by staff</h3>
-              <p className="text-sm text-gray-500">Review the latest mock counts.</p>
-            </div>
-            <button
-              type="button"
-              className={`rounded-full px-4 py-2 text-sm font-medium transition ${viewMode === 'Dashboard' ? 'bg-wtg-secondary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-              onClick={() => setViewMode('Dashboard')}
-            >Dashboard</button>
-          </div>
-
-          <div className="mt-6 space-y-4">
-            {totals.staffCounts.map(item => {
-              const width = totals.incidentCount === 0 ? 0 : Math.max(8, Math.min(100, (item.count / totals.incidentCount) * 100))
-              return (
-                <div key={item.code} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm font-medium text-gray-700">
-                    <span>{item.code}</span>
-                    <span>{item.count} incidents</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-gray-200">
-                    <div className="h-2 rounded-full bg-wtg-secondary" style={{ width: `${width}%` }} />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
       </section>
 
       {reportMode === 'YoY' && (
@@ -535,14 +501,41 @@ export default function SchrgReport() {
         </section>
       )}
 
-      <section className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="mb-6">
+          <h3 className="text-base font-semibold">Staff Performance</h3>
+          <p className="text-sm text-gray-500 mt-1">View incident volumes and performance metrics by staff member.</p>
+        </div>
+
+        <div className="mb-6 rounded-xl border border-gray-100 bg-gray-50 p-4">
+          <div className="space-y-4">
+            {totals.staffCounts.map(item => {
+              const width = totals.incidentCount === 0 ? 0 : Math.max(8, Math.min(100, (item.count / totals.incidentCount) * 100))
+              return (
+                <div key={item.code} className="space-y-2">
+                  <div className="flex items-center justify-between text-sm font-medium text-gray-700">
+                    <span>{item.code}</span>
+                    <span>{item.count} incidents</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-gray-200">
+                    <div className="h-2 rounded-full bg-wtg-secondary" style={{ width: `${width}%` }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium">Filter by staff:</span>
+          <span className="text-sm font-medium text-gray-600">Filter by staff:</span>
           <select value={staffFilter} onChange={e => setStaffFilter(e.target.value)} className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
             <option value="">All</option>
             {STAFF_CODES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
+      </section>
+
+      <section className="mb-6 flex justify-end">
         <button onClick={downloadCSV} className="rounded-full bg-wtg-secondary px-4 py-2 text-sm font-medium text-white">Download CSV</button>
       </section>
 

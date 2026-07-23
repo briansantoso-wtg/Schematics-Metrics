@@ -3,6 +3,7 @@ import { BarChart3 } from 'lucide-react'
 import { ConnectionProvider } from './contexts/Connection'
 import SchrgReport from './pages/SchrgReport'
 import Metrics from './pages/Metrics'
+import StaffPerformance from './pages/StaffPerformance'
 
 function Header() {
   return (
@@ -17,6 +18,7 @@ function Header() {
         <nav className="flex gap-6">
           <Link to="/" className="hover:text-blue-100 transition-colors font-medium">Dashboard</Link>
           <Link to="/schrg" className="hover:text-blue-100 transition-colors font-medium">KPI Report</Link>
+          <Link to="/staff-performance" className="hover:text-blue-100 transition-colors font-medium">Staff Performance</Link>
         </nav>
       </div>
     </header>
@@ -33,6 +35,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Metrics />} />
               <Route path="/schrg" element={<SchrgReport />} />
+              <Route path="/staff-performance" element={<StaffPerformance />} />
             </Routes>
           </div>
         </main>

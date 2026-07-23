@@ -166,12 +166,23 @@ export default function Metrics() {
   }, [currentYearData])
 
   const monthlyTrend = useMemo(() => {
-    return currentYearData
-      .sort((a, b) => a.Month - b.Month)
-      .map(m => ({
-        month: `${m.Month}/${m.Year}`,
-        count: m.IncidentCount,
-        avgDays: parseFloat(m.AvgDaysToClose.toFixed(2)),
+    const grouped = currentYearData.reduce((acc, m) => {
+      const key = `${m.Month}/${m.Year}`
+      if (!acc[key]) {
+        acc[key] = { month: key, monthNum: m.Month, count: 0, avgDays: 0, entries: 0 }
+      }
+      acc[key].count += m.IncidentCount
+      acc[key].avgDays += m.AvgDaysToClose
+      acc[key].entries += 1
+      return acc
+    }, {} as Record<string, { month: string; monthNum: number; count: number; avgDays: number; entries: number }>)
+
+    return Object.values(grouped)
+      .sort((a, b) => a.monthNum - b.monthNum)
+      .map(item => ({
+        month: item.month,
+        count: item.count,
+        avgDays: parseFloat((item.avgDays / item.entries).toFixed(2)),
       }))
   }, [currentYearData])
 
@@ -228,145 +239,58 @@ export default function Metrics() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          icon={AlertCircle}
-          label="Total incidents (YTD)"
-          value={totalIncidents.toLocaleString()}
-          subtitle={`Year ${selectedYear}`}
-          color="blue"
-        />
-        <StatCard
-          icon={Clock}
-          label="Avg resolution time"
-          value={`${avgResolutionTime} days`}
-          subtitle="Current year average"
-          color="green"
-        />
-        <StatCard
-          icon={Users}
-          label="Active staff members"
-          value={staffPerformance.length}
-          subtitle={staffPerformance.map(s => s.name).join(', ')}
-          color="amber"
-        />
-        <StatCard
-          icon={TrendingDown}
-          label="Best improvement"
-          value={`${Math.max(...improvementData.map(d => d.ImprovementPercent || 0))}%`}
-          subtitle="Year-over-year"
-          color="red"
-        />
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
-        <div className="space-y-4">
-          <div className="card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Monthly incident trends</h2>
-                <p className="text-sm text-gray-500 mt-1">Incident volume and average resolution time by month.</p>
-              </div>
-            </div>
-            <div className="w-full h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={monthlyTrend} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 12 }} />
-                  <YAxis yAxisId="left" tick={{ fill: '#6b7280', fontSize: 12 }} />
-                  <YAxis yAxisId="right" orientation="right" tick={{ fill: '#6b7280', fontSize: 12 }} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar yAxisId="left" dataKey="count" fill="#3b82f6" name="Incident Count" />
-                  <Line yAxisId="right" type="monotone" dataKey="avgDays" stroke="#ef4444" name="Avg Days to Close" />
-                </ComposedChart>
-              </ResponsiveContainer>
+      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Monthly incident trends</h2>
+              <p className="text-sm text-gray-500 mt-1">Incident volume and average resolution time by month.</p>
             </div>
           </div>
-
-          <div className="card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Staff member performance</h2>
-                <p className="text-sm text-gray-500 mt-1">Incident count and average resolution time per staff.</p>
-              </div>
-            </div>
-            <div className="w-full h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={staffPerformance} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 12 }} />
-                  <YAxis yAxisId="left" tick={{ fill: '#6b7280', fontSize: 12 }} />
-                  <YAxis yAxisId="right" orientation="right" tick={{ fill: '#6b7280', fontSize: 12 }} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar yAxisId="left" dataKey="count" fill="#8b5cf6" name="Incident Count">
-                    {staffPerformance.map(s => (
-                      <Cell key={s.name} fill={staffColors[s.name] || '#6b7280'} />
-                    ))}
-                  </Bar>
-                  <Line yAxisId="right" type="monotone" dataKey="avgDays" stroke="#f59e0b" name="Avg Days" />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
+          <div className="w-full h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={monthlyTrend} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 12 }} />
+                <YAxis yAxisId="left" tick={{ fill: '#6b7280', fontSize: 12 }} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fill: '#6b7280', fontSize: 12 }} />
+                <Tooltip />
+                <Legend />
+                <Bar yAxisId="left" dataKey="count" fill="#3b82f6" name="Incident Count" />
+                <Line yAxisId="right" type="monotone" dataKey="avgDays" stroke="#ef4444" name="Avg Days to Close" />
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Priority breakdown</h2>
-                <p className="text-sm text-gray-500 mt-1">Incident distribution by criticality level.</p>
-              </div>
-            </div>
-            <div className="h-72 flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={priorityBreakdown}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={90}
-                    innerRadius={45}
-                    label
-                  >
-                    {priorityBreakdown.map(item => (
-                      <Cell key={`cell-${item.name}`} fill={priorityColors[item.name] || '#6b7280'} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend verticalAlign="bottom" height={36} />
-                </PieChart>
-              </ResponsiveContainer>
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Priority breakdown</h2>
+              <p className="text-sm text-gray-500 mt-1">Incident distribution by criticality level.</p>
             </div>
           </div>
-
-          <div className="card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">YoY improvement</h2>
-                <p className="text-sm text-gray-500 mt-1">Year-over-year resolution time improvement %.</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {improvementData.map((item) => (
-                <div key={item.StaffMember} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium text-gray-900">{item.StaffMember}</span>
-                    <span className="font-semibold text-emerald-600">{item.ImprovementPercent}%</span>
-                  </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500" style={{ width: `${Math.min(100, (item.ImprovementPercent || 0))}%` }} />
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {item.PriorAvgDays?.toFixed(1)}d → {item.CurrentAvgDays.toFixed(1)}d
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="h-72 flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={priorityBreakdown}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={90}
+                  innerRadius={45}
+                  label
+                >
+                  {priorityBreakdown.map(item => (
+                    <Cell key={`cell-${item.name}`} fill={priorityColors[item.name] || '#6b7280'} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend verticalAlign="bottom" height={36} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
