@@ -280,15 +280,12 @@ app.get('/api/schrg', async (_req, res) => {
     const staffList = 'AER,BS8,KLT,RS6'
     const excludePriorities = 'CR6,FTR'
 
-    // Monthly query
+    // Monthly query (all criticalities CR1-CR9)
     const monthlyQuery = `
       DECLARE @StartDate DATETIME = '${startDate}';
       DECLARE @StaffList NVARCHAR(200) = '${staffList}';
-      DECLARE @ExcludePriorities NVARCHAR(200) = '${excludePriorities}';
       ;WITH Staffs AS (
           SELECT value AS StaffCode FROM STRING_SPLIT(@StaffList, ',')
-      ), ExcludedPriorities AS (
-          SELECT value AS Priority FROM STRING_SPLIT(@ExcludePriorities, ',')
       )
       SELECT
           YEAR(IM.IM_SystemCreateTimeUtc) AS Year,
@@ -305,7 +302,6 @@ app.get('/api/schrg', async (_req, res) => {
       ) WF ON IM.IM_PK = WF.P9_ParentID AND WF.rn = 1
       WHERE IM.IM_Status = 'CLS'
           AND IM.IM_SystemCreateTimeUtc >= @StartDate
-          AND IM.IM_Priority NOT IN (SELECT Priority FROM ExcludedPriorities)
           AND IM.IM_CloseTimeUtc IS NOT NULL
       GROUP BY YEAR(IM.IM_SystemCreateTimeUtc), MONTH(IM.IM_SystemCreateTimeUtc), FORMAT(IM.IM_SystemCreateTimeUtc, 'yyyy-MM'), WF.P9_GS_NKAssignedStaffMember
       ORDER BY Year DESC, Month DESC, StaffMember;
@@ -341,6 +337,72 @@ app.get('/api/schrg', async (_req, res) => {
           AND IM.IM_CloseTimeUtc IS NOT NULL
       GROUP BY YEAR(IM.IM_SystemCreateTimeUtc), WF.P9_GS_NKAssignedStaffMember, IM.IM_Priority
       ORDER BY Year DESC, StaffMember, Priority;
+    `
+
+    // Priority weekly query (for weekly breakdown charts)
+    const priorityWeeklyQuery = `
+      DECLARE @StartDate DATETIME = '${startDate}';
+      DECLARE @StaffList NVARCHAR(200) = '${staffList}';
+      ;WITH Staffs AS (
+          SELECT value AS StaffCode FROM STRING_SPLIT(@StaffList, ',')
+      )
+      SELECT
+          YEAR(IM.IM_SystemCreateTimeUtc) AS Year,
+          DATEPART(WEEK, IM.IM_SystemCreateTimeUtc) AS Week,
+          FORMAT(DATEADD(WEEK, DATEDIFF(WEEK, 0, IM.IM_SystemCreateTimeUtc), 0), 'yyyy-MM-dd') AS WeekStart,
+          IM.IM_Priority AS Priority,
+          CASE
+              WHEN IM.IM_Priority IN ('CR1', 'CR2') THEN 'CR1-CR2'
+              WHEN IM.IM_Priority = 'CR3' THEN 'CR3'
+              WHEN IM.IM_Priority IN ('CR4', 'CR5') THEN 'CR4-CR5'
+              ELSE 'Other'
+          END AS PriorityBand,
+          COUNT(DISTINCT IM.IM_PK) AS IncidentCount,
+          ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_CloseTimeUtc) / 3600.0), 2) AS NetResolutionAgeHours
+      FROM IncidentMain IM
+      INNER JOIN (
+          SELECT P9_ParentID, P9_GS_NKAssignedStaffMember, ROW_NUMBER() OVER (PARTITION BY P9_ParentID ORDER BY P9_PK DESC) AS rn
+          FROM WorkflowTask
+          WHERE P9_ParentTableCode = 'IM' AND P9_GS_NKAssignedStaffMember IN (SELECT StaffCode FROM Staffs)
+      ) WF ON IM.IM_PK = WF.P9_ParentID AND WF.rn = 1
+      WHERE IM.IM_Status = 'CLS'
+          AND IM.IM_SystemCreateTimeUtc >= @StartDate
+          AND IM.IM_CloseTimeUtc IS NOT NULL
+      GROUP BY YEAR(IM.IM_SystemCreateTimeUtc), DATEPART(WEEK, IM.IM_SystemCreateTimeUtc), FORMAT(DATEADD(WEEK, DATEDIFF(WEEK, 0, IM.IM_SystemCreateTimeUtc), 0), 'yyyy-MM-dd'), IM.IM_Priority
+      ORDER BY FORMAT(DATEADD(WEEK, DATEDIFF(WEEK, 0, IM.IM_SystemCreateTimeUtc), 0), 'yyyy-MM-dd');
+    `
+
+    // Priority monthly query (for priority breakdown charts)
+    const priorityMonthlyQuery = `
+      DECLARE @StartDate DATETIME = '${startDate}';
+      DECLARE @StaffList NVARCHAR(200) = '${staffList}';
+      ;WITH Staffs AS (
+          SELECT value AS StaffCode FROM STRING_SPLIT(@StaffList, ',')
+      )
+      SELECT
+          YEAR(IM.IM_SystemCreateTimeUtc) AS Year,
+          MONTH(IM.IM_SystemCreateTimeUtc) AS Month,
+          FORMAT(IM.IM_SystemCreateTimeUtc, 'yyyy-MM') AS YearMonth,
+          IM.IM_Priority AS Priority,
+          CASE
+              WHEN IM.IM_Priority IN ('CR1', 'CR2') THEN 'CR1-CR2'
+              WHEN IM.IM_Priority = 'CR3' THEN 'CR3'
+              WHEN IM.IM_Priority IN ('CR4', 'CR5') THEN 'CR4-CR5'
+              ELSE 'Other'
+          END AS PriorityBand,
+          COUNT(DISTINCT IM.IM_PK) AS IncidentCount,
+          ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_CloseTimeUtc) / 3600.0), 2) AS NetResolutionAgeHours
+      FROM IncidentMain IM
+      INNER JOIN (
+          SELECT P9_ParentID, P9_GS_NKAssignedStaffMember, ROW_NUMBER() OVER (PARTITION BY P9_ParentID ORDER BY P9_PK DESC) AS rn
+          FROM WorkflowTask
+          WHERE P9_ParentTableCode = 'IM' AND P9_GS_NKAssignedStaffMember IN (SELECT StaffCode FROM Staffs)
+      ) WF ON IM.IM_PK = WF.P9_ParentID AND WF.rn = 1
+      WHERE IM.IM_Status = 'CLS'
+          AND IM.IM_SystemCreateTimeUtc >= @StartDate
+          AND IM.IM_CloseTimeUtc IS NOT NULL
+      GROUP BY YEAR(IM.IM_SystemCreateTimeUtc), MONTH(IM.IM_SystemCreateTimeUtc), FORMAT(IM.IM_SystemCreateTimeUtc, 'yyyy-MM'), IM.IM_Priority
+      ORDER BY Year DESC, Month DESC, Priority;
     `
 
     // YoY query
@@ -386,7 +448,7 @@ app.get('/api/schrg', async (_req, res) => {
     console.log('SCHRG Query started')
     console.log('Config - Start:', startDate, 'Staff:', staffList, 'Exclude:', excludePriorities)
 
-    const [monthly, yearly, yoy] = await Promise.all([
+    const [monthly, yearly, priorityMonthly, priorityWeekly, yoy] = await Promise.all([
       queryRaw(monthlyQuery).catch(err => {
         console.error('Monthly query failed:', err)
         return []
@@ -395,23 +457,35 @@ app.get('/api/schrg', async (_req, res) => {
         console.error('Yearly query failed:', err)
         return []
       }),
+      queryRaw(priorityMonthlyQuery).catch(err => {
+        console.error('Priority monthly query failed:', err)
+        return []
+      }),
+      queryRaw(priorityWeeklyQuery).catch(err => {
+        console.error('Priority weekly query failed:', err)
+        return []
+      }),
       queryRaw(yoyQuery).catch(err => {
         console.error('YoY query failed:', err)
         return []
       }),
     ])
 
-    console.log('SCHRG Results - Monthly:', monthly.length, 'Yearly:', yearly.length, 'YoY:', yoy.length)
+    console.log('SCHRG Results - Monthly:', monthly.length, 'Yearly:', yearly.length, 'Priority Monthly:', priorityMonthly.length, 'Priority Weekly:', priorityWeekly.length, 'YoY:', yoy.length)
 
     res.json({
       monthly,
       yearly,
+      priorityMonthly,
+      priorityWeekly,
       yoy,
       lastUpdated: new Date().toISOString(),
       source: 'live',
       debug: {
         monthlyCount: monthly.length,
         yearlyCount: yearly.length,
+        priorityMonthlyCount: priorityMonthly.length,
+        priorityWeeklyCount: priorityWeekly.length,
         yoyCount: yoy.length
       }
     })
@@ -744,6 +818,154 @@ app.post('/api/rule-result/:ruleId', async (req, res) => {
 
 // Serve React frontend
 const distPath = path.join(__dirname, '../dist')
+// Work Items Lead Time & Throughput - TMC only
+app.get('/api/work-items-metrics', async (_req, res) => {
+  try {
+    console.log('Work Items Metrics Query started')
+
+    // Weekly throughput and lead time for TMC only
+    // Lead time = from first task actual start (P9_ActualDateUtc) to last task completion (P9_CompletedTimeUtc)
+    const metricsQuery = `
+      WITH ItemLeadTime AS (
+        SELECT
+          WKI.WKI_PK,
+          MIN(WFT.P9_ActualDateUtc) AS FirstTaskStart,
+          MAX(WFT.P9_CompletedTimeUtc) AS LastTaskComplete,
+          DATEDIFF(HOUR, MIN(WFT.P9_ActualDateUtc), MAX(WFT.P9_CompletedTimeUtc)) AS LeadTimeHours
+        FROM dbo.WorkItem WKI
+        INNER JOIN dbo.WorkflowTask WFT ON WKI.WKI_PK = WFT.P9_ParentID
+        WHERE
+          WKI.WKI_WorkItemType = 'PRO'
+          AND WKI.WKI_WorkItemArea = 'PRO'
+          AND WKI.WKI_ActivityType = 'SSC'
+          AND WKI.WKI_ActivitySubtype = 'TMC'
+          AND WFT.P9_ParentTableCode = 'WKI'
+          AND WFT.P9_Status = 'CLS'
+          AND WFT.P9_ActualDateUtc IS NOT NULL
+          AND WFT.P9_CompletedTimeUtc IS NOT NULL
+        GROUP BY WKI.WKI_PK
+      )
+      SELECT
+        DATEADD(WEEK, DATEDIFF(WEEK, 0, LastTaskComplete), 0) AS WeekStart,
+        COUNT(*) AS Throughput,
+        ROUND(AVG(CAST(LeadTimeHours AS FLOAT) / 24.0), 2) AS AvgLeadTimeDays,
+        ROUND(AVG(CAST(LeadTimeHours AS FLOAT)), 2) AS AvgLeadTimeHours,
+        ROUND(MIN(CAST(LeadTimeHours AS FLOAT) / 24.0), 2) AS MinLeadTimeDays,
+        ROUND(MAX(CAST(LeadTimeHours AS FLOAT) / 24.0), 2) AS MaxLeadTimeDays
+      FROM ItemLeadTime
+      GROUP BY DATEADD(WEEK, DATEDIFF(WEEK, 0, LastTaskComplete), 0)
+      ORDER BY WeekStart DESC
+    `
+
+    // Get summary stats for TMC - based on completed tasks
+    const summaryQuery = `
+      SELECT
+        TotalItems = COUNT(DISTINCT WKI.WKI_PK),
+        CompletedItems = COUNT(DISTINCT CASE WHEN WFT.P9_Status = 'CLS' AND WFT.P9_CompletedTimeUtc IS NOT NULL THEN WKI.WKI_PK END),
+        OpenItems = COUNT(DISTINCT WKI.WKI_PK) - COUNT(DISTINCT CASE WHEN WFT.P9_Status = 'CLS' AND WFT.P9_CompletedTimeUtc IS NOT NULL THEN WKI.WKI_PK END),
+        AvgLeadTimeDays = ROUND(AVG(CASE WHEN WFT.P9_Status = 'CLS' AND WFT.P9_ActualDateUtc IS NOT NULL AND WFT.P9_CompletedTimeUtc IS NOT NULL
+          THEN CAST(DATEDIFF(HOUR, WFT.P9_ActualDateUtc, WFT.P9_CompletedTimeUtc) AS FLOAT) / 24.0
+          ELSE NULL END), 2),
+        MinLeadTimeDays = ROUND(MIN(CASE WHEN WFT.P9_Status = 'CLS' AND WFT.P9_ActualDateUtc IS NOT NULL AND WFT.P9_CompletedTimeUtc IS NOT NULL
+          THEN CAST(DATEDIFF(HOUR, WFT.P9_ActualDateUtc, WFT.P9_CompletedTimeUtc) AS FLOAT) / 24.0
+          ELSE NULL END), 2),
+        MaxLeadTimeDays = ROUND(MAX(CASE WHEN WFT.P9_Status = 'CLS' AND WFT.P9_ActualDateUtc IS NOT NULL AND WFT.P9_CompletedTimeUtc IS NOT NULL
+          THEN CAST(DATEDIFF(HOUR, WFT.P9_ActualDateUtc, WFT.P9_CompletedTimeUtc) AS FLOAT) / 24.0
+          ELSE NULL END), 2)
+      FROM dbo.WorkItem WKI
+      LEFT JOIN dbo.WorkflowTask WFT ON WKI.WKI_PK = WFT.P9_ParentID AND WFT.P9_ParentTableCode = 'WKI'
+      WHERE
+        WKI.WKI_WorkItemType = 'PRO'
+        AND WKI.WKI_WorkItemArea = 'PRO'
+        AND WKI.WKI_ActivityType = 'SSC'
+        AND WKI.WKI_ActivitySubtype = 'TMC'
+    `
+
+    const metricsResults = await queryRaw(metricsQuery)
+    const summaryResults = await queryRaw(summaryQuery)
+
+    console.log(`Work Items Metrics - TMC: ${metricsResults.length} weeks, Summary: ${summaryResults.length}`)
+
+    res.json({
+      metrics: metricsResults,
+      summary: summaryResults[0] || {},
+      lastUpdated: new Date().toISOString(),
+      source: 'live'
+    })
+  } catch (err) {
+    console.error('Work Items Metrics query error:', err)
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+// Work Items Type Tree queries
+app.get('/api/work-items', async (_req, res) => {
+  try {
+    console.log('Work Items Query started')
+
+    // Simple query - just get work items directly without XML parsing
+    const workItemsQuery1 = `
+      SELECT
+        WKI_PK,
+        WKI_WorkItemNumber,
+        WKI_WorkItemType AS ProductCode,
+        WKI_WorkItemArea AS AreaCode,
+        WKI_ActivityType AS ModuleCode,
+        WKI_ActivitySubtype AS ChangeTypeCode,
+        WKI_Summary,
+        WKI_Status,
+        WKI_Priority,
+        WKI_SystemCreateTimeUtc,
+        WKI_SystemLastEditTimeUtc,
+        WKI_SystemCreateUser
+      FROM dbo.WorkItem
+      WHERE
+        WKI_WorkItemType = 'PRO'
+        AND WKI_WorkItemArea = 'PRO'
+        AND WKI_ActivityType = 'SSC'
+        AND WKI_ActivitySubtype = 'TMC'
+      ORDER BY WKI_SystemCreateTimeUtc DESC
+    `
+
+    const workItemsQuery2 = `
+      SELECT
+        WKI_PK,
+        WKI_WorkItemNumber,
+        WKI_WorkItemType AS ProductCode,
+        WKI_WorkItemArea AS AreaCode,
+        WKI_ActivityType AS ModuleCode,
+        WKI_ActivitySubtype AS ChangeTypeCode,
+        WKI_Summary,
+        WKI_Status,
+        WKI_Priority,
+        WKI_SystemCreateTimeUtc,
+        WKI_SystemLastEditTimeUtc,
+        WKI_SystemCreateUser
+      FROM dbo.WorkItem
+      WHERE
+        WKI_WorkItemType = 'PRO'
+        AND WKI_WorkItemArea = 'PRO'
+        AND WKI_ActivityType = 'SSC'
+        AND WKI_ActivitySubtype != 'TMC'
+      ORDER BY WKI_SystemCreateTimeUtc DESC
+    `
+
+    const query1Results = await queryRaw(workItemsQuery1)
+    const query2Results = await queryRaw(workItemsQuery2)
+    console.log(`Work Items Results - Query1: ${query1Results.length} Query2: ${query2Results.length}`)
+
+    res.json({
+      query1: query1Results,
+      query2: query2Results,
+      lastUpdated: new Date().toISOString(),
+      source: 'live'
+    })
+  } catch (err) {
+    console.error('Work Items query error:', err)
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
 app.use(express.static(distPath))
 app.get('*', (_req, res) => {
   res.sendFile(path.join(distPath, 'index.html'))

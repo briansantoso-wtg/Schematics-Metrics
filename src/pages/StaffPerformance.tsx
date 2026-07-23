@@ -21,7 +21,7 @@ interface MonthlyData {
   YearMonth: string
   StaffMember: string
   IncidentCount: number
-  AvgDaysToClose: number
+  NetResolutionAge: number
 }
 
 interface YoYData {
@@ -90,7 +90,7 @@ export default function StaffPerformance() {
         acc[m.StaffMember] = { name: m.StaffMember, count: 0, netResolutionAge: 0, entries: 0 }
       }
       acc[m.StaffMember].count += m.IncidentCount
-      acc[m.StaffMember].netResolutionAge += m.AvgDaysToClose
+      acc[m.StaffMember].netResolutionAge += m.NetResolutionAge
       acc[m.StaffMember].entries += 1
       return acc
     }, {} as Record<string, { name: string; count: number; netResolutionAge: number; entries: number }>)
@@ -175,7 +175,7 @@ export default function StaffPerformance() {
                 <YAxis yAxisId="right" orientation="right" tick={{ fill: '#6b7280', fontSize: 12 }} />
                 <Tooltip />
                 <Legend />
-                <Bar yAxisId="left" dataKey="count" fill="#8b5cf6" name="Incident Count">
+                <Bar yAxisId="left" dataKey="count" fill="#8b5cf6" name="Incident Count" label={{ position: 'top', fill: '#6b7280', fontSize: 11 }}>
                   {staffPerformance.map(s => (
                     <Cell key={s.name} fill={staffColors[s.name] || '#6b7280'} />
                   ))}
@@ -234,8 +234,8 @@ export default function StaffPerformance() {
                   <YAxis yAxisId="right" orientation="right" tick={{ fill: '#6b7280', fontSize: 12 }} />
                   <Tooltip />
                   <Legend />
-                  <Bar yAxisId="left" dataKey="IncidentCount" fill={staffColors[staff] || '#6b7280'} name="Incidents" />
-                  <Line yAxisId="right" type="monotone" dataKey="AvgDaysToClose" stroke="#f59e0b" name="Avg Days" />
+                  <Bar yAxisId="left" dataKey="IncidentCount" fill={staffColors[staff] || '#6b7280'} name="Incidents" label={{ position: 'top', fill: '#6b7280', fontSize: 11 }} />
+                  <Line yAxisId="right" type="monotone" dataKey="NetResolutionAge" stroke="#f59e0b" name="Net Resolution Age" />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
