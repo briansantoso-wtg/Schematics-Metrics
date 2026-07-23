@@ -21,6 +21,7 @@ import {
   AlertCircle,
   Clock,
   ArrowRight,
+  Info,
 } from 'lucide-react'
 
 interface MonthlyData {
@@ -276,6 +277,10 @@ export default function Metrics() {
                 <Line yAxisId="right" type="monotone" dataKey="avgDays" stroke="#ef4444" name="Avg Days to Close" />
               </ComposedChart>
             </ResponsiveContainer>
+          </div>
+          <div className="mt-3 flex items-start gap-2 text-xs text-gray-500">
+            <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>"Avg Days to Close" = calendar days from incident creation (IM_SystemCreateTimeUtc) to closure (IM_CloseTimeUtc)</span>
           </div>
         </div>
 
