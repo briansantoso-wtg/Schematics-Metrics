@@ -108,18 +108,29 @@ export default function Metrics() {
   const [yearly, setYearly] = useState<YearlyData[]>([])
   const [yoy, setYoy] = useState<YoYData[]>([])
   const [loading, setLoading] = useState(true)
+  const [lastUpdated, setLastUpdated] = useState<string>('')
   const [selectedYear, setSelectedYear] = useState(2026)
 
+  const fetchData = async () => {
+    try {
+      const response = await fetch('/api/schrg')
+      const data = await response.json()
+      setMonthly(data.monthly || [])
+      setYearly(data.yearly || [])
+      setYoy(data.yoy || [])
+      setLastUpdated(data.lastUpdated || new Date().toISOString())
+      setLoading(false)
+    } catch (err) {
+      console.error('Failed to fetch SCHRG data:', err)
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    fetch('/api/schrg')
-      .then(r => r.json())
-      .then(data => {
-        setMonthly(data.monthly)
-        setYearly(data.yearly)
-        setYoy(data.yoy)
-        setLoading(false)
-      })
-      .catch(console.error)
+    fetchData()
+    // Auto-refresh every 5 minutes
+    const interval = setInterval(fetchData, 5 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [])
 
   const availableYears = useMemo(() => {
@@ -220,6 +231,11 @@ export default function Metrics() {
           <p className="text-sm text-gray-500 mt-2 max-w-2xl">
             Service incident resolution KPIs by staff member, priority, and resolution time trends.
           </p>
+          {lastUpdated && (
+            <p className="text-xs text-gray-400 mt-2">
+              Last updated: {new Date(lastUpdated).toLocaleString()} (auto-refreshes every 5 minutes)
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <select

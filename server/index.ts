@@ -247,19 +247,135 @@ function parseCSV(content: string): Record<string, unknown>[] {
   })
 }
 
-app.get('/api/schrg', (_req, res) => {
+app.get('/api/schrg', async (_req, res) => {
   try {
-    const publicDir = path.join(__dirname, '../public')
+    // SCHRG configuration
+    const startDate = '2024-09-01'
+    const staffList = 'AER,BS8,KLT,RS6'
+    const excludePriorities = 'CR6,FTR'
 
-    const monthlyPath = path.join(publicDir, 'schrg_monthly.csv')
-    const yearlyPath = path.join(publicDir, 'schrg_yearly.csv')
-    const yoyPath = path.join(publicDir, 'schrg_yoy.csv')
+    // Monthly query
+    const monthlyQuery = `
+      DECLARE @StartDate DATETIME = '${startDate}';
+      DECLARE @StaffList NVARCHAR(200) = '${staffList}';
+      DECLARE @ExcludePriorities NVARCHAR(200) = '${excludePriorities}';
+      ;WITH Staffs AS (
+          SELECT value AS StaffCode FROM STRING_SPLIT(@StaffList, ',')
+      ), ExcludedPriorities AS (
+          SELECT value AS Priority FROM STRING_SPLIT(@ExcludePriorities, ',')
+      )
+      SELECT
+          YEAR(IM.IM_SystemCreateTimeUtc) AS Year,
+          MONTH(IM.IM_SystemCreateTimeUtc) AS Month,
+          FORMAT(IM.IM_SystemCreateTimeUtc, 'yyyy-MM') AS YearMonth,
+          WF.P9_GS_NKAssignedStaffMember AS StaffMember,
+          COUNT(DISTINCT IM.IM_ID) AS IncidentCount,
+          ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS AvgDaysToClose
+      FROM IncidentMain IM
+      INNER JOIN (
+          SELECT P9_ParentID, P9_GS_NKAssignedStaffMember, ROW_NUMBER() OVER (PARTITION BY P9_ParentID ORDER BY P9_PK DESC) AS rn
+          FROM WorkflowTask
+          WHERE P9_ParentTableCode = 'IM' AND P9_GS_NKAssignedStaffMember IN (SELECT StaffCode FROM Staffs)
+      ) WF ON IM.IM_ID = WF.P9_ParentID AND WF.rn = 1
+      WHERE IM.IM_Status = 'CLS'
+          AND IM.IM_SystemCreateTimeUtc >= @StartDate
+          AND IM.IM_Priority NOT IN (SELECT Priority FROM ExcludedPriorities)
+      GROUP BY YEAR(IM.IM_SystemCreateTimeUtc), MONTH(IM.IM_SystemCreateTimeUtc), FORMAT(IM.IM_SystemCreateTimeUtc, 'yyyy-MM'), WF.P9_GS_NKAssignedStaffMember
+      ORDER BY Year DESC, Month DESC, StaffMember;
+    `
 
-    const monthly = parseCSV(fs.readFileSync(monthlyPath, 'utf-8'))
-    const yearly = parseCSV(fs.readFileSync(yearlyPath, 'utf-8'))
-    const yoy = parseCSV(fs.readFileSync(yoyPath, 'utf-8'))
+    // Yearly query
+    const yearlyQuery = `
+      DECLARE @StartDate DATETIME = '${startDate}';
+      DECLARE @StaffList NVARCHAR(200) = '${staffList}';
+      DECLARE @ExcludePriorities NVARCHAR(200) = '${excludePriorities}';
+      ;WITH Staffs AS (
+          SELECT value AS StaffCode FROM STRING_SPLIT(@StaffList, ',')
+      ), ExcludedPriorities AS (
+          SELECT value AS Priority FROM STRING_SPLIT(@ExcludePriorities, ',')
+      )
+      SELECT
+          YEAR(IM.IM_SystemCreateTimeUtc) AS Year,
+          WF.P9_GS_NKAssignedStaffMember AS StaffMember,
+          IM.IM_Priority AS Priority,
+          COUNT(DISTINCT IM.IM_ID) AS IncidentCount,
+          ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS AvgDaysToClose,
+          ROUND(MIN(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS MinDays,
+          ROUND(MAX(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS MaxDays
+      FROM IncidentMain IM
+      INNER JOIN (
+          SELECT P9_ParentID, P9_GS_NKAssignedStaffMember, ROW_NUMBER() OVER (PARTITION BY P9_ParentID ORDER BY P9_PK DESC) AS rn
+          FROM WorkflowTask
+          WHERE P9_ParentTableCode = 'IM' AND P9_GS_NKAssignedStaffMember IN (SELECT StaffCode FROM Staffs)
+      ) WF ON IM.IM_ID = WF.P9_ParentID AND WF.rn = 1
+      WHERE IM.IM_Status = 'CLS'
+          AND IM.IM_SystemCreateTimeUtc >= @StartDate
+          AND IM.IM_Priority NOT IN (SELECT Priority FROM ExcludedPriorities)
+      GROUP BY YEAR(IM.IM_SystemCreateTimeUtc), WF.P9_GS_NKAssignedStaffMember, IM.IM_Priority
+      ORDER BY Year DESC, StaffMember, Priority;
+    `
 
-    res.json({ monthly, yearly, yoy })
+    // YoY query
+    const yoyQuery = `
+      DECLARE @StartDate DATETIME = '${startDate}';
+      DECLARE @StaffList NVARCHAR(200) = '${staffList}';
+      DECLARE @ExcludePriorities NVARCHAR(200) = '${excludePriorities}';
+      ;WITH Staffs AS (
+          SELECT value AS StaffCode FROM STRING_SPLIT(@StaffList, ',')
+      ), ExcludedPriorities AS (
+          SELECT value AS Priority FROM STRING_SPLIT(@ExcludePriorities, ',')
+      ), YearlyStats AS (
+          SELECT
+              YEAR(IM.IM_SystemCreateTimeUtc) AS Year,
+              WF.P9_GS_NKAssignedStaffMember AS StaffMember,
+              ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS AvgDays,
+              COUNT(DISTINCT IM.IM_ID) AS IncidentCount
+          FROM IncidentMain IM
+          INNER JOIN (
+              SELECT P9_ParentID, P9_GS_NKAssignedStaffMember, ROW_NUMBER() OVER (PARTITION BY P9_ParentID ORDER BY P9_PK DESC) AS rn
+              FROM WorkflowTask
+              WHERE P9_ParentTableCode = 'IM' AND P9_GS_NKAssignedStaffMember IN (SELECT StaffCode FROM Staffs)
+          ) WF ON IM.IM_ID = WF.P9_ParentID AND WF.rn = 1
+          WHERE IM.IM_Status = 'CLS'
+              AND IM.IM_SystemCreateTimeUtc >= @StartDate
+              AND IM.IM_Priority NOT IN (SELECT Priority FROM ExcludedPriorities)
+          GROUP BY YEAR(IM.IM_SystemCreateTimeUtc), WF.P9_GS_NKAssignedStaffMember
+      )
+      SELECT
+          Curr.Year AS CurrentYear,
+          Curr.StaffMember,
+          Curr.AvgDays AS CurrentAvgDays,
+          Curr.IncidentCount AS CurrentCount,
+          Prv.AvgDays AS PriorAvgDays,
+          Prv.IncidentCount AS PriorCount,
+          ROUND(((Prv.AvgDays - Curr.AvgDays) / NULLIF(Prv.AvgDays, 0) * 100), 2) AS ImprovementPercent
+      FROM YearlyStats Curr
+      LEFT JOIN YearlyStats Prv ON Curr.StaffMember = Prv.StaffMember AND Curr.Year = Prv.Year + 1
+      ORDER BY CurrentYear DESC, StaffMember;
+    `
+
+    const [monthly, yearly, yoy] = await Promise.all([
+      queryRaw(monthlyQuery).catch(err => {
+        console.error('Monthly query failed:', err)
+        return []
+      }),
+      queryRaw(yearlyQuery).catch(err => {
+        console.error('Yearly query failed:', err)
+        return []
+      }),
+      queryRaw(yoyQuery).catch(err => {
+        console.error('YoY query failed:', err)
+        return []
+      }),
+    ])
+
+    res.json({
+      monthly,
+      yearly,
+      yoy,
+      lastUpdated: new Date().toISOString(),
+      source: 'live'
+    })
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
   }
