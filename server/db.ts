@@ -18,7 +18,7 @@ function buildIntegratedConfig(): sql_.config {
   return {
     server: serverAddress(),
     port: parseInt(process.env.DB_PORT ?? '1433', 10),
-    database: process.env.DB_DATABASE ?? 'edidb',
+    database: process.env.DB_DATABASE ?? 'ediprod',
     driver: process.env.DB_ODBC_DRIVER ?? 'ODBC Driver 18 for SQL Server',
     options: {
       trustedConnection: true,
@@ -34,7 +34,7 @@ function buildSqlAuthConfig(creds: DbCredentials): sql_.config {
   return {
     server: serverAddress(),
     port: parseInt(process.env.DB_PORT ?? '1433', 10),
-    database: process.env.DB_DATABASE ?? 'edidb',
+    database: process.env.DB_DATABASE ?? 'ediprod',
     user: creds.username,
     password: creds.password,
     options: {
