@@ -4,14 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite --host\" \"tsx watch server/index.ts\"",
+    "dev": "vite",
     "build": "tsc -b && vite build",
-    "start": "node dist/index.js",
-    "preview": "vite preview",
-    "seed": "tsx scripts/seed.ts",
-    "server": "tsx watch server/index.ts",
-    "typecheck": "tsc -b",
-    "prod": "npm run build && vite preview"
+    "server": "tsx watch server/index.ts"
   },
   "optionalDependencies": {
     "msnodesqlv8": "5.2.1"
