@@ -296,7 +296,7 @@ app.get('/api/schrg', async (_req, res) => {
           FORMAT(IM.IM_SystemCreateTimeUtc, 'yyyy-MM') AS YearMonth,
           WF.P9_GS_NKAssignedStaffMember AS StaffMember,
           COUNT(DISTINCT IM.IM_PK) AS IncidentCount,
-          ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_CloseTimeUtc) / 86400.0), 4) AS AvgDaysToClose
+          ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_CloseTimeUtc) / 86400.0), 4) AS NetResolutionAge
       FROM IncidentMain IM
       INNER JOIN (
           SELECT P9_ParentID, P9_GS_NKAssignedStaffMember, ROW_NUMBER() OVER (PARTITION BY P9_ParentID ORDER BY P9_PK DESC) AS rn
@@ -326,7 +326,7 @@ app.get('/api/schrg', async (_req, res) => {
           WF.P9_GS_NKAssignedStaffMember AS StaffMember,
           IM.IM_Priority AS Priority,
           COUNT(DISTINCT IM.IM_PK) AS IncidentCount,
-          ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_CloseTimeUtc) / 86400.0), 4) AS AvgDaysToClose,
+          ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_CloseTimeUtc) / 86400.0), 4) AS NetResolutionAge,
           ROUND(MIN(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_CloseTimeUtc) / 86400.0), 4) AS MinDays,
           ROUND(MAX(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_CloseTimeUtc) / 86400.0), 4) AS MaxDays
       FROM IncidentMain IM
@@ -440,7 +440,7 @@ app.post('/api/schrg/validate', async (req, res) => {
             WF.P9_GS_NKAssignedStaffMember AS StaffMember,
             IM.IM_Priority AS Priority,
             COUNT(DISTINCT IM.IM_ID) AS IncidentCount,
-            ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS AvgDaysToClose,
+            ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS NetResolutionAge,
             ROUND(MIN(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS MinDays,
             ROUND(MAX(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS MaxDays
         FROM IncidentMain IM
@@ -471,7 +471,7 @@ app.post('/api/schrg/validate', async (req, res) => {
             FORMAT(IM.IM_SystemCreateTimeUtc, 'yyyy-MM') AS YearMonth,
             WF.P9_GS_NKAssignedStaffMember AS StaffMember,
             COUNT(DISTINCT IM.IM_ID) AS IncidentCount,
-            ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS AvgDaysToClose
+            ROUND(AVG(DATEDIFF(SECOND, IM.IM_SystemCreateTimeUtc, IM.IM_SystemUpdateTimeUtc) / 86400.0), 4) AS NetResolutionAge
         FROM IncidentMain IM
         INNER JOIN (
             SELECT P9_ParentID, P9_GS_NKAssignedStaffMember, ROW_NUMBER() OVER (PARTITION BY P9_ParentID ORDER BY P9_PK DESC) AS rn

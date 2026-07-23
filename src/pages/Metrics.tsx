@@ -162,18 +162,18 @@ export default function Metrics() {
   const staffPerformance = useMemo(() => {
     const grouped = currentYearData.reduce((acc, m) => {
       if (!acc[m.StaffMember]) {
-        acc[m.StaffMember] = { name: m.StaffMember, count: 0, avgDays: 0, entries: 0 }
+        acc[m.StaffMember] = { name: m.StaffMember, count: 0, netResolutionAge: 0, entries: 0 }
       }
       acc[m.StaffMember].count += m.IncidentCount
-      acc[m.StaffMember].avgDays += m.AvgDaysToClose
+      acc[m.StaffMember].netResolutionAge += m.AvgDaysToClose
       acc[m.StaffMember].entries += 1
       return acc
-    }, {} as Record<string, { name: string; count: number; avgDays: number; entries: number }>)
+    }, {} as Record<string, { name: string; count: number; netResolutionAge: number; entries: number }>)
 
     return Object.values(grouped).map(s => ({
       name: s.name,
       count: s.count,
-      avgDays: parseFloat((s.avgDays / s.entries).toFixed(2)),
+      netResolutionAge: parseFloat((s.netResolutionAge / s.entries).toFixed(2)),
     })).sort((a, b) => b.count - a.count)
   }, [currentYearData])
 
@@ -181,20 +181,20 @@ export default function Metrics() {
     const grouped = currentYearData.reduce((acc, m) => {
       const key = `${m.Month}/${m.Year}`
       if (!acc[key]) {
-        acc[key] = { month: key, monthNum: m.Month, count: 0, avgDays: 0, entries: 0 }
+        acc[key] = { month: key, monthNum: m.Month, count: 0, netResolutionAge: 0, entries: 0 }
       }
       acc[key].count += m.IncidentCount
-      acc[key].avgDays += m.AvgDaysToClose
+      acc[key].netResolutionAge += m.AvgDaysToClose
       acc[key].entries += 1
       return acc
-    }, {} as Record<string, { month: string; monthNum: number; count: number; avgDays: number; entries: number }>)
+    }, {} as Record<string, { month: string; monthNum: number; count: number; netResolutionAge: number; entries: number }>)
 
     return Object.values(grouped)
       .sort((a, b) => a.monthNum - b.monthNum)
       .map(item => ({
         month: item.month,
         count: item.count,
-        avgDays: parseFloat((item.avgDays / item.entries).toFixed(2)),
+        netResolutionAge: parseFloat((item.netResolutionAge / item.entries).toFixed(2)),
       }))
   }, [currentYearData])
 
@@ -274,13 +274,13 @@ export default function Metrics() {
                 <Tooltip />
                 <Legend />
                 <Bar yAxisId="left" dataKey="count" fill="#3b82f6" name="Incident Count" />
-                <Line yAxisId="right" type="monotone" dataKey="avgDays" stroke="#ef4444" name="Avg Days to Close" />
+                <Line yAxisId="right" type="monotone" dataKey="netResolutionAge" stroke="#ef4444" name="Net Resolution Age" />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
           <div className="mt-3 flex items-start gap-2 text-xs text-gray-500">
             <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <span>"Avg Days to Close" = calendar days from incident creation (IM_SystemCreateTimeUtc) to closure (IM_CloseTimeUtc)</span>
+            <span>"Net Resolution Age" = calendar days from incident creation (IM_SystemCreateTimeUtc) to closure (IM_CloseTimeUtc)</span>
           </div>
         </div>
 
@@ -334,13 +334,13 @@ export default function Metrics() {
                 .reduce((acc, y) => {
                   const existing = acc.find(a => a.priority === y.Priority)
                   if (existing) {
-                    existing.avgDays = ((existing.avgDays * existing.count) + (y.AvgDaysToClose * y.IncidentCount)) / (existing.count + y.IncidentCount)
+                    existing.netResolutionAge = ((existing.netResolutionAge * existing.count) + (y.AvgDaysToClose * y.IncidentCount)) / (existing.count + y.IncidentCount)
                     existing.count += y.IncidentCount
                   } else {
-                    acc.push({ priority: y.Priority, avgDays: y.AvgDaysToClose, count: y.IncidentCount })
+                    acc.push({ priority: y.Priority, netResolutionAge: y.AvgDaysToClose, count: y.IncidentCount })
                   }
                   return acc
-                }, [] as Array<{ priority: string; avgDays: number; count: number }>)
+                }, [] as Array<{ priority: string; netResolutionAge: number; count: number }>)
                 .sort((a, b) => a.priority.localeCompare(b.priority))
               }
               margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
@@ -350,7 +350,7 @@ export default function Metrics() {
               <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="avgDays" fill="#10b981" name="Avg Days to Close" radius={[8, 8, 0, 0]}>
+              <Bar dataKey="netResolutionAge" fill="#10b981" name="Net Resolution Age" radius={[8, 8, 0, 0]}>
                 {priorityBreakdown.map(item => (
                   <Cell key={`cell-${item.name}`} fill={priorityColors[item.name] || '#6b7280'} />
                 ))}
